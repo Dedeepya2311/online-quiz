@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloomQuiz - Pastel Quiz Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #DDD9C3;  /* Soft pastel blue */
+            --secondary: #F5F5F5; /* Very light gray */
+            --accent: #A9A17C;   /* Soft pastel purple */
+            --text: #555B6E;     /* Muted navy for text */
+            --light: #FFFFFF;    /* Pure white */
+            --highlight: #FCBAD3; /* Soft pastel pink */
+            --success: #A7D7C5;  /* Soft pastel green */
+            --warning: #FFD3B6;  /* Soft pastel orange */
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--secondary);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        header {
+            background-color: var(--light);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo span {
+            color: var(--primary);
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--accent);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        nav ul li {
+            margin-left: 1.5rem;
+            position: relative;
+        }
+        
+        nav ul li a {
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        
+        nav ul li a:hover {
+            color: var(--accent);
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--light);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-radius: 5px;
+            padding: 0.5rem 0;
+            min-width: 200px;
+            z-index: 100;
+            display: none;
+        }
+        
+        .dropdown-menu li {
+            margin: 0;
+            padding: 0.5rem 1rem;
+        }
+        
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(rgba(168, 216, 234, 0.1), rgba(168, 216, 234, 0.05));
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        
+        .hero p {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+        
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+            background-color: var(--light);
+        }
+        
+        .search-bar input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(170, 150, 218, 0.2);
+        }
+        
+        .categories {
+            padding: 3rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .categories h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--accent);
+        }
+        
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .category-card {
+            background-color: var(--light);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .category-image {
+            height: 150px;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            font-size: 2rem;
+        }
+        
+        .category-info {
+            padding: 1.5rem;
+        }
+        
+        .category-info h3 {
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        
+        .category-info p {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        footer {
+            background-color: var(--primary);
+            color: var(--text);
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+        
+        /* Quiz Page Styles */
+        .quiz-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: var(--light);
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .quiz-title {
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+        
+        .quiz-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        
+        .progress {
+            font-size: 0.9rem;
+            color: #888;
+        }
+        
+        .timer {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-top: 0.3rem;
+        }
+        
+        .timer.warning {
+            color: var(--highlight);
+        }
+        
+        .question {
+            margin-bottom: 2rem;
+        }
+        
+        .question-text {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .options {
+            display: grid;
+            gap: 0.8rem;
+        }
+        
+        .option {
+            padding: 0.8rem 1rem;
+            background-color: var(--secondary);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .option:hover {
+            background-color: rgba(168, 216, 234, 0.2);
+        }
+        
+        .option.selected {
+            background-color: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .quiz-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #9c86d0;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(170, 150, 218, 0.1);
+        }
+        
+        .results-container {
+            text-align: center;
+            padding: 2rem;
+            background-color: var(--light);
+            border-radius: 8px;
+            max-width: 800px;
+            margin: 2rem auto;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .results-score {
+            font-size: 2rem;
+            color: var(--accent);
+            margin: 1rem 0;
+        }
+        
+        .results-message {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .time-up-message {
+            background-color: var(--warning);
+            color: var(--text);
+            padding: 0.8rem;
+            border-radius: 5px;
+            margin: 1rem auto;
+            max-width: 400px;
+        }
+        
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        /* Mobile Menu */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--light);
+            z-index: 1000;
+            padding: 2rem;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .mobile-menu.active {
+            transform: translateX(0);
+        }
+        
+        .mobile-menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .mobile-menu-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--accent);
+        }
+        
+        .mobile-nav ul {
+            list-style: none;
+        }
+        
+        .mobile-nav ul li {
+            margin-bottom: 1rem;
+        }
+        
+        .mobile-nav ul li a {
+            text-decoration: none;
+            color: var(--text);
+            font-size: 1.1rem;
+            display: block;
+            padding: 0.5rem 0;
+        }
+        
+        .mobile-dropdown-menu {
+            padding-left: 1rem;
+            margin-top: 0.5rem;
+            border-left: 2px solid var(--accent);
+        }
+        
+        .mobile-dropdown-menu li {
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            nav ul {
+                display: none;
+            }
+            
+            .category-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .quiz-container {
+                padding: 1rem;
+            }
+            
+            .quiz-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .quiz-meta {
+                align-items: flex-start;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Homepage -->
+        <div v-if="currentPage === 'home'">
+            <header>
+                <div class="logo">Bloom<span>Quiz</span></div>
+                <button class="menu-toggle" @click="toggleMobileMenu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <nav>
+                    <ul>
+                        <li><a href="#" @click.prevent="currentPage = 'home'">Home</a></li>
+                        <li class="dropdown">
+                            <a href="#" @click.prevent="currentPage = 'browse'">
+                                Browse <i class="fas fa-chevron-down" style="margin-left: 5px; font-size: 0.8rem;"></i>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li v-for="category in categories" :key="category.id">
+                                    <a href="#" @click.prevent="startQuiz(category.id)">{{ category.name }}</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </nav>
+            </header>
+            
+            <!-- Mobile Menu -->
+            <div class="mobile-menu" :class="{ active: mobileMenuOpen }">
+                <div class="mobile-menu-header">
+                    <div class="logo">Bloom<span>Quiz</span></div>
+                    <button class="mobile-menu-close" @click="toggleMobileMenu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <nav class="mobile-nav">
+                    <ul>
+                        <li><a href="#" @click.prevent="goToPage('home')">Home</a></li>
+                        <li>
+                            <a href="#" @click.prevent="toggleMobileDropdown('browse')">
+                                Browse <i class="fas fa-chevron-down" style="margin-left: 5px; font-size: 0.8rem;"></i>
+                            </a>
+                            <ul class="mobile-dropdown-menu" v-if="mobileDropdownOpen === 'browse'">
+                                <li v-for="category in categories" :key="category.id">
+                                    <a href="#" @click.prevent="startQuiz(category.id)">{{ category.name }}</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a href="#" @click.prevent="goToPage('about')">About</a></li>
+                        <li><a href="#" @click.prevent="goToPage('contact')">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+            
+            <section class="hero">
+                <h1>Test Your Knowledge</h1>
+                <p>Choose from hundreds of quizzes across diverse topics. Each quiz is uniquely generated with 10 questions from our database of 30 questions per category.</p>
+                <div class="search-bar">
+                    <input type="text" placeholder="Search for quizzes..." v-model="searchQuery">
+                </div>
+            </section>
+            
+            <section class="categories">
+                <h2>Popular Categories</h2>
+                <div class="category-grid">
+                    <div class="category-card" v-for="category in filteredCategories" :key="category.id" @click="startQuiz(category.id)">
+                        <div class="category-image">
+                            {{ category.emoji }}
+                        </div>
+                        <div class="category-info">
+                            <h3>{{ category.name }}</h3>
+                            <p>10 random questions from our collection of 30</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <footer>
+                <p>&copy; 2023 BloomQuiz. All rights reserved.</p>
+            </footer>
+        </div>
+        
+        <!-- Quiz Page -->
+        <div v-if="currentPage === 'quiz'" class="quiz-container">
+            <div class="quiz-header">
+                <h2 class="quiz-title">{{ currentQuiz.name }}</h2>
+                <div class="quiz-meta">
+                    <div class="progress">Question {{ currentQuestionIndex + 1 }} of {{ currentQuiz.questions.length }}</div>
+                    <div class="timer" :class="{ warning: timeLeft <= 300 }">
+                        <i class="fas fa-clock"></i> {{ formatTime(timeLeft) }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="question">
+                <div class="question-text">{{ currentQuestion.text }}</div>
+                <div class="options">
+                    <div 
+                        class="option" 
+                        v-for="(option, index) in currentQuestion.options" 
+                        :key="index"
+                        :class="{ selected: selectedOption === index }"
+                        @click="selectOption(index)"
+                    >
+                        {{ option }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="quiz-footer">
+                <button class="btn btn-outline" @click="previousQuestion" :disabled="currentQuestionIndex === 0">Previous</button>
+                <button 
+                    class="btn btn-primary" 
+                    @click="nextQuestion"
+                    :disabled="selectedOption === null"
+                >
+                    {{ currentQuestionIndex === currentQuiz.questions.length - 1 ? 'Finish Quiz' : 'Next' }}
+                </button>
+            </div>
+        </div>
+        
+        <!-- Results Page -->
+        <div v-if="currentPage === 'results'" class="results-container">
+            <h2>Quiz Completed!</h2>
+            <div class="results-score">You scored {{ score }} out of {{ currentQuiz.questions.length }}</div>
+            <p class="results-message">{{ getResultMessage() }}</p>
+            
+            <div v-if="timeUp" class="time-up-message">
+                <i class="fas fa-exclamation-triangle"></i> Time expired! Your answers up to this point have been scored.
+            </div>
+            
+            <button class="btn btn-primary" @click="currentPage = 'home'">Back to Home</button>
+            
+            <div class="share-buttons">
+                <button class="btn btn-outline">Share on Twitter</button>
+                <button class="btn btn-outline">Share on Facebook</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+        
+        createApp({
+            setup() {
+                // Sample data - in a real app, this would come from an API
+                const categories = ref([
+                    { id: 1, name: 'Fashion', emoji: '👗' },
+                    { id: 2, name: 'IPL', emoji: '🏏' },
+                    { id: 3, name: 'Movies', emoji: '🎬' },
+                    { id: 4, name: 'Football', emoji: '⚽' },
+                    { id: 5, name: 'Cartoons', emoji: '📺' },
+                    { id: 6, name: 'Anime', emoji: '🇯🇵' },
+                    { id: 7, name: 'Nature', emoji: '🌿' },
+                    { id: 8, name: 'Wildlife', emoji: '🦁' },
+                    { id: 9, name: 'Social Media', emoji: '📱' },
+                    { id: 10, name: 'Space', emoji: '🚀' },
+                    { id: 11, name: 'Flowers', emoji: '🌸' }
+                ]);
+                
+                // Sample questions - in a real app, this would come from an API
+                const questionsDatabase = {
+                    1: generateFashionQuestions(),
+                    11: generateFlowerQuestions()
+                    // Other categories would be similarly populated
+                };
+                
+                const currentPage = ref('home');
+                const searchQuery = ref('');
+                const currentQuiz = ref(null);
+                const currentQuestionIndex = ref(0);
+                const selectedOption = ref(null);
+                const userAnswers = ref([]);
+                const score = ref(0);
+                const timeLeft = ref(1800); // 30 minutes in seconds
+                const timerInterval = ref(null);
+                const timeUp = ref(false);
+                const mobileMenuOpen = ref(false);
+                const mobileDropdownOpen = ref(null);
+                
+                const filteredCategories = computed(() => {
+                    if (!searchQuery.value) return categories.value;
+                    return categories.value.filter(category => 
+                        category.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+                    );
+                });
+                
+                const currentQuestion = computed(() => {
+                    if (!currentQuiz.value) return null;
+                    return currentQuiz.value.questions[currentQuestionIndex.value];
+                });
+                
+                function startQuiz(categoryId) {
+                    // In a real app, this would fetch questions from an API
+                    // For demo, we'll use the sample questions
+                    const allQuestions = questionsDatabase[categoryId] || generateGenericQuestions();
+                    
+                    // Select 10 random questions
+                    const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+                    const selectedQuestions = shuffled.slice(0, 10);
+                    
+                    currentQuiz.value = {
+                        id: categoryId,
+                        name: categories.value.find(c => c.id === categoryId).name,
+                        questions: selectedQuestions
+                    };
+                    
+                    currentQuestionIndex.value = 0;
+                    selectedOption.value = null;
+                    userAnswers.value = [];
+                    timeLeft.value = 1800; // Reset timer to 30 minutes
+                    timeUp.value = false;
+                    currentPage.value = 'quiz';
+                    mobileMenuOpen.value = false;
+                    
+                    // Start the timer
+                    startTimer();
+                }
+                
+                function startTimer() {
+                    if (timerInterval.value) {
+                        clearInterval(timerInterval.value);
+                    }
+                    
+                    timerInterval.value = setInterval(() => {
+                        timeLeft.value--;
+                        
+                        if (timeLeft.value <= 0) {
+                            clearInterval(timerInterval.value);
+                            timeUp.value = true;
+                            calculateScore();
+                            currentPage.value = 'results';
+                        }
+                    }, 1000);
+                }
+                
+                function formatTime(seconds) {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+                
+                function selectOption(index) {
+                    selectedOption.value = index;
+                }
+                
+                function nextQuestion() {
+                    // Save the answer
+                    userAnswers.value[currentQuestionIndex.value] = selectedOption.value;
+                    
+                    if (currentQuestionIndex.value < currentQuiz.value.questions.length - 1) {
+                        currentQuestionIndex.value++;
+                        selectedOption.value = userAnswers.value[currentQuestionIndex.value] ?? null;
+                    } else {
+                        clearInterval(timerInterval.value);
+                        calculateScore();
+                        currentPage.value = 'results';
+                    }
+                }
+                
+                function previousQuestion() {
+                    if (currentQuestionIndex.value > 0) {
+                        currentQuestionIndex.value--;
+                        selectedOption.value = userAnswers.value[currentQuestionIndex.value] ?? null;
+                    }
+                }
+                
+                function calculateScore() {
+                    let correct = 0;
+                    for (let i = 0; i < currentQuiz.value.questions.length; i++) {
+                        if (userAnswers.value[i] === currentQuiz.value.questions[i].correctAnswer) {
+                            correct++;
+                        }
+                    }
+                    score.value = correct;
+                }
+                
+                function getResultMessage() {
+                    const percentage = (score.value / currentQuiz.value.questions.length) * 100;
+                    if (percentage >= 90) return "Excellent! You're a true expert!";
+                    if (percentage >= 70) return "Great job! You know your stuff!";
+                    if (percentage >= 50) return "Good effort! Keep learning!";
+                    return "Nice try! Maybe another category suits you better?";
+                }
+                
+                function toggleMobileMenu() {
+                    mobileMenuOpen.value = !mobileMenuOpen.value;
+                }
+                
+                function toggleMobileDropdown(menu) {
+                    mobileDropdownOpen.value = mobileDropdownOpen.value === menu ? null : menu;
+                }
+                
+                function goToPage(page) {
+                    currentPage.value = page;
+                    mobileMenuOpen.value = false;
+                }
+                
+                onUnmounted(() => {
+                    if (timerInterval.value) {
+                        clearInterval(timerInterval.value);
+                    }
+                });
+                
+                return {
+                    categories,
+                    currentPage,
+                    searchQuery,
+                    currentQuiz,
+                    currentQuestionIndex,
+                    selectedOption,
+                    score,
+                    timeLeft,
+                    timeUp,
+                    mobileMenuOpen,
+                    mobileDropdownOpen,
+                    filteredCategories,
+                    currentQuestion,
+                    startQuiz,
+                    selectOption,
+                    nextQuestion,
+                    previousQuestion,
+                    getResultMessage,
+                    formatTime,
+                    toggleMobileMenu,
+                    toggleMobileDropdown,
+                    goToPage
+                };
+            }
+        }).mount('#app');
+        
+        // Sample question generators
+        function generateFashionQuestions() {
+            return [
+                {
+                    text: "Which fashion house is known for its 'Double F' logo?",
+                    options: ["Gucci", "Fendi", "Prada", "Versace"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the iconic Burberry pattern?",
+                    options: ["Nova Check", "Tartan", "Paisley", "Houndstooth"],
+                    correctAnswer: 0
+                },
+                // More fashion questions...
+            ];
+        }
+        
+        function generateFlowerQuestions() {
+            return [
+                {
+                    text: "What is the most popular flower given on Valentine's Day?",  
+                    options: ["Tulip", "Rose", "Lily", "Daisy"],  
+                    correctAnswer: 1  
+                },
+                {
+                    text: "Which flower is often associated with the Netherlands?",  
+                    options: ["Sunflower", "Tulip", "Orchid", "Daffodil"],  
+                    correctAnswer: 1  
+                },
+                {
+                    text: "What flower is the symbol of purity and is often used in weddings?",  
+                    options: ["Rose", "Lily", "Daisy", "Orchid"],  
+                    correctAnswer: 1  
+                },
+                {
+                    text: "Which flower is often used in Hawaiian leis?",  
+                    options: ["Hibiscus", "Orchid", "Plumeria", "Jasmine"],  
+                    correctAnswer: 2  
+                },
+                {
+                    text: "What flower is the birth flower for the month of August?",  
+                    options: ["Poppy", "Gladiolus", "Daisy", "Rose"],  
+                    correctAnswer: 1  
+                },
+                {
+                    text: "Which flower is known for its ability to repel mosquitoes?",  
+                    options: ["Marigold", "Lavender", "Citronella Geranium", "Sunflower"],  
+                    correctAnswer: 2  
+                },
+                {
+                    text: "What flower is the birth flower for the month of June?",  
+                    options: ["Rose", "Honeysuckle", "Lily", "Daisy"],  
+                    correctAnswer: 0  
+                },
+                {
+                    text: "Which flower is known for its medicinal properties and is used in teas?",  
+                    options: ["Chamomile", "Daisy", "Sunflower", "Tulip"],  
+                    correctAnswer: 0  
+                },
+                {
+                    text: "What flower is traditionally given on Mother's Day?",  
+                    options: ["Carnation", "Rose", "Lily", "Daisy"],  
+                    correctAnswer: 0  
+                },
+                {
+                    text: "Which flower is the symbol of the American state of Texas?",  
+                    options: ["Bluebonnet", "Rose", "Sunflower", "Daisy"],  
+                    correctAnswer: 0  
+                },
+                {
+                    text: "What flower is known for its association with the Greek goddess Aphrodite?",  
+                    options: ["Rose", "Lily", "Daisy", "Orchid"],  
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which flower is the symbol of the American state of New York?",  
+                    options: ["Rose", "Tulip", "Daisy", "Lily"],  
+                    correctAnswer: 0  
+                },
+                {
+                    text: "What flower is traditionally associated with Easter?",  
+                    options: ["Lily", "Daffodil", "Tulip", "Daisy"],  
+                    correctAnswer: 1  
+                },
+                {
+                    text: "Which flower is known for its blue color and is often called 'bluebonnet'?",  
+                    options: ["Lupine", "Bluebell", "Cornflower", "Forget-Me-Not"],  
+                    correctAnswer: 0  
+                },
+                {
+                    
+                text: "What flower is the national symbol of India?",  
+                options: ["Rose", "Lotus", "Jasmine", "Marigold"],  
+                correctAnswer: 1  
+ 
+                },
+                {
+                    
+                text: "Which flower is associated with the phrase 'say it with flowers'?",  
+                options: ["Rose", "Tulip", "Carnation", "Daisy"],  
+                correctAnswer: 2
+                },
+                {
+                    text: "Which flower is often associated with the Greek myth of Narcissus?",  
+                options: ["Daffodil", "Rose", "Lily", "Tulip"],  
+                correctAnswer: 0  
+
+              
+                },
+                {
+                    text: "What flower is the symbol of the LGBTQ+ pride movement?",  
+                options: ["Rose", "Lavender", "Orchid", "Carnation"],  
+                correctAnswer: 1  
+
+                
+                },
+                {
+                    text: "Which flower is used to make the spice saffron?",  
+                options: ["Rose", "Lavender", "Saffron Crocus", "Marigold"],  
+                correctAnswer: 2  
+
+               
+                },
+                {
+                    text: "What flower is the birth flower for the month of February?",  
+                options: ["Violet", "Rose", "Iris", "Daffodil"],  
+                correctAnswer: 0  
+
+              
+                },
+                {
+                    text: "Which flower is often associated with funerals and sympathy?",  
+                options: ["Lily", "Sunflower", "Daisy", "Tulip"],  
+                correctAnswer: 0  
+
+                },
+                {
+                    
+                text: "What flower is known for its ability to track the sun's movement?",  
+                options: ["Daisy", "Sunflower", "Marigold", "Hibiscus"],  
+                correctAnswer: 1  
+                },
+                {
+                    text: "What flower is traditionally given on a 10th wedding anniversary?",  
+                options: ["Daffodil", "Rose", "Tulip", "Daisy"],  
+                correctAnswer: 0  
+
+               
+                },
+                {
+                    text: "Which flower is often associated with remembrance and is worn on Memorial Day?",  
+                options: ["Poppy", "Lily", "Violet", "Daisy"],  
+                correctAnswer: 0  
+
+               
+                },
+                {
+                    text: "What flower is the birth flower for the month of April?",  
+                options: ["Daisy", "Rose", "Sweet Pea", "Tulip"],  
+                correctAnswer: 0  
+
+                
+                },
+                {
+                    text: "Which flower is commonly used to make essential oils and perfumes?",  
+                options: ["Lavender", "Daisy", "Sunflower", "Orchid"],  
+                correctAnswer: 0  
+
+                },
+                {
+                    
+                text: "What flower is known as the 'Queen of the Night' due to its nighttime blooming?",  
+                options: ["Moonflower", "Orchid", "Jasmine", "Evening Primrose"],  
+                correctAnswer: 0 
+                },
+                {
+                    
+                text: "Which of these flowers is known for its strong, sweet fragrance?",  
+                options: ["Daisy", "Sunflower", "Jasmine", "Marigold"],  
+                correctAnswer: 2  
+
+               
+                },
+                {
+                    text: "What flower is the national symbol of Japan?",  
+                options: ["Cherry Blossom", "Rose", "Lotus", "Orchid"],  
+                correctAnswer: 0  
+
+                },
+                {
+                    
+                text: "Which flower is known as the 'flower of the sun'?",  
+                options: ["Daisy", "Sunflower", "Marigold", "Hibiscus"],  
+                correctAnswer: 1  
+                },
+            ];
+        }
+
+        function generateWildlifeQuestions() {
+            return [
+                {
+                    text: "Which animal is known as the 'King of the Jungle'?",  
+                    options: ["Lion", "Tiger", "Elephant", "Gorilla"],  
+                    correctAnswer: 0  
+
+                },
+                {
+                    text: "What is the smallest species of penguin?",  
+                    options: ["Emperor Penguin", "Little Blue Penguin", "Adélie Penguin", "Rockhopper Penguin"],  
+                    correctAnswer: 1  
+  
+                },
+                {
+                    text: "Which animal is known for its ability to regrow lost limbs?",  
+                    options: ["Starfish", "Lizard", "Octopus", "Salamander"],  
+                    correctAnswer: 3  
+
+                    
+                },
+                {
+                    text: "What is the largest species of shark?",  
+                    options: ["Great White Shark", "Hammerhead Shark", "Whale Shark", "Tiger Shark"],  
+                    correctAnswer: 2  
+
+                },
+                {
+                    
+                    text: "Which animal is the closest living relative to the T-Rex?",  
+                    options: ["Alligator", "Chicken", "Komodo Dragon", "Ostrich"],  
+                    correctAnswer: 1  
+
+                },
+                {
+                    
+                    text: "What is the only marsupial native to North America?",  
+                    options: ["Kangaroo", "Koala", "Opossum", "Tasmanian Devil"],  
+                    correctAnswer: 2 
+                },
+                {
+                    text: "What is the largest species of bear?",  
+                    options: ["Grizzly Bear", "Polar Bear", "Black Bear", "Panda Bear"],  
+                    correctAnswer: 1  
+
+                   
+                },
+                {
+                    text: "Which animal is known for playing dead when threatened?",  
+                    options: ["Opossum", "Armadillo", "Skunk", "Porcupine"],  
+                    correctAnswer: 0  
+
+                   
+                },
+                {
+                    text: "What is the only venomous snake found in the UK?",  
+                    options: ["Cobra", "Adder", "Rattlesnake", "Viper"],  
+                    correctAnswer: 1  
+
+                   
+                },
+                {
+                    text: "Which animal has the longest lifespan of any mammal?",  
+                    options: ["Elephant", "Bowhead Whale", "Giant Tortoise", "Human"],  
+                    correctAnswer: 1  
+
+                },
+                {
+                    
+                    text: "What is the tallest animal in the world?",  
+                    options: ["Elephant", "Giraffe", "Ostrich", "Moose"],  
+                    correctAnswer: 1  
+
+                   
+                },
+                {
+                    text: "Which big cat is also known as the 'ghost of the mountains'?",  
+                    options: ["Snow Leopard", "Cheetah", "Jaguar", "Cougar"],  
+                    correctAnswer: 0  
+                },
+                {
+                    text: "What is the national animal of Australia?",  
+                    options: ["Kangaroo", "Koala", "Emu", "Platypus"],  
+                    correctAnswer: 0  
+
+                    
+                },
+                {
+                    text: "Which animal can change its color to blend into its surroundings?",  
+                    options: ["Frog", "Octopus", "Chameleon", "Cuttlefish"],  
+                    correctAnswer: 2  
+
+                   
+                },
+                {
+                    text: "What is the only continent where giraffes live in the wild?",  
+                    options: ["Asia", "Africa", "South America", "Australia"],  
+                    correctAnswer: 1  
+
+                    
+                },
+                {
+                    text: "Which animal is known as the 'ship of the desert'?",  
+                    options: ["Camel", "Horse", "Donkey", "Elephant"],  
+                    correctAnswer: 0  
+
+                  
+                },
+                {
+                    text: "What is the slowest mammal in the world?",  
+                    options: ["Tortoise", "Sloth", "Manatee", "Koala"],  
+                    correctAnswer: 1  
+
+                   
+                },
+                {
+                    text: "Which bird is the symbol of the United States?",  
+                    options: ["Eagle", "Hawk", "Owl", "Raven"],  
+                    correctAnswer: 0 
+                },
+                {
+                    text: "What is the largest land animal in the world?",  
+                    options: ["Polar Bear", "African Elephant", "Hippopotamus", "Giraffe"],  
+                    correctAnswer: 1  
+
+                  
+                },
+                {
+                    text: "Which bird is the fastest animal on Earth in a dive?",  
+                    options: ["Eagle", "Hawk", "Peregrine Falcon", "Ostrich"],  
+                    correctAnswer: 2  
+
+                   
+                },
+                {
+                    text: "What is the only mammal capable of true flight?",  
+                    options: ["Flying Squirrel", "Bat", "Penguin", "Owl"],  
+                    correctAnswer: 1  
+
+                   
+                },
+                {
+                    text: "Which big cat is the largest in the world?",  
+                    options: ["Lion", "Jaguar", "Tiger", "Leopard"],  
+                    correctAnswer: 2  
+
+                   
+                },
+                {
+                    text: "What animal is known for its black and white stripes?",  
+                    options: ["Zebra", "Panda", "Orca", "Skunk"],  
+                    correctAnswer: 0  
+
+                },
+                {
+                    
+                    text: "Which marine animal is the largest on Earth?",  
+                    options: ["Great White Shark", "Blue Whale", "Giant Squid", "Killer Whale"],  
+                    correctAnswer: 1 
+                },
+                {
+            
+                },
+                {
+                    
+                    text: "Which animal has the strongest bite force of any living creature?",  
+                    options: ["Great White Shark", "Saltwater Crocodile", "Hippopotamus", "Gorilla"],  
+                    correctAnswer: 1
+                },
+                {
+                    
+                    text: "What is the national animal of Canada?",  
+                    options: ["Moose", "Beaver", "Polar Bear", "Bald Eagle"],  
+                    correctAnswer: 1  
+
+                },
+                {
+                    text: "Which animal is known for its ability to mimic human speech?",  
+                    options: ["Crow", "Dolphin", "Parrot", "Elephant"],  
+                    correctAnswer: 2  
+
+                },
+                {
+                    text: "What is the fastest land animal?",  
+                    options: ["Lion", "Cheetah", "Greyhound", "Pronghorn Antelope"],  
+                    correctAnswer: 1  
+
+                      
+                },
+                {
+                    text: "Which animal can rotate its head up to 270 degrees?",  
+                    options: ["Owl", "Eagle", "Parrot", "Flamingo"],  
+                    correctAnswer: 0  
+
+                    
+                },
+                {
+                   
+                    
+                    text: "What is the only continent without native snakes?",  
+                    options: ["Australia", "Antarctica", "Europe", "North America"],  
+                    correctAnswer: 1
+                },
+            ];
+        }
+        
+        
+        function generateGenericQuestions() {
+            // Fallback if category not implemented
+            return Array(100).fill().map((_, i) => ({
+                text: `Sample question ${i + 1}?`,
+                options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+                correctAnswer: i % 4
+            }));
+        }
+    </script>
+</body>
+</html>
