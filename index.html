@@ -13,8 +13,8 @@
             --accent: #A9A17C;   /* Soft pastel purple */
             --text: #555B6E;     /* Muted navy for text */
             --light: #FFFFFF;    /* Pure white */
-            --highlight: #FCBAD3; /* Soft pastel pink */
-            --success: #A7D7C5;  /* Soft pastel green */
+            --highlight: #f20b0b; /* Soft pastel pink */
+            --success: #06c72d;  /* Soft pastel green */
             --warning: #FFD3B6;  /* Soft pastel orange */
         }
         
@@ -142,6 +142,17 @@
             background-color: var(--light);
         }
         
+        .search-bar button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+        }
+        
         .search-bar input:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(170, 150, 218, 0.2);
@@ -186,8 +197,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text);
-            font-size: 2rem;
+            overflow: hidden;
+        }
+        
+        .category-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        
+        .category-card:hover .category-image img {
+            transform: scale(1.05);
         }
         
         .category-info {
@@ -291,6 +312,27 @@
             background-color: var(--accent);
             color: white;
             border-color: var(--accent);
+        }
+        
+        .option.correct {
+            background-color: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .option.incorrect {
+            background-color: var(--highlight);
+            color: white;
+            border-color: var(--highlight);
+        }
+        
+        .correct-answer-message {
+            color: var(--success);
+            font-weight: bold;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background-color: rgba(167, 215, 197, 0.2);
+            border-radius: 5px;
         }
         
         .quiz-footer {
@@ -521,7 +563,8 @@
                 <h1>Test Your Knowledge</h1>
                 <p>Choose from hundreds of quizzes across diverse topics. Each quiz is uniquely generated with 10 questions from our database of 30 questions per category.</p>
                 <div class="search-bar">
-                    <input type="text" placeholder="Search for quizzes..." v-model="searchQuery">
+                    <input type="text" placeholder="Search for quizzes..." v-model="searchQuery" @keyup.enter="performSearch">
+                    <button @click="performSearch"><i class="fas fa-search"></i></button>
                 </div>
             </section>
             
@@ -530,7 +573,7 @@
                 <div class="category-grid">
                     <div class="category-card" v-for="category in filteredCategories" :key="category.id" @click="startQuiz(category.id)">
                         <div class="category-image">
-                            {{ category.emoji }}
+                            <img :src="category.image" :alt="category.name">
                         </div>
                         <div class="category-info">
                             <h3>{{ category.name }}</h3>
@@ -564,11 +607,18 @@
                         class="option" 
                         v-for="(option, index) in currentQuestion.options" 
                         :key="index"
-                        :class="{ selected: selectedOption === index }"
+                        :class="{
+                            selected: selectedOption === index,
+                            correct: showResults && index === currentQuestion.correctAnswer,
+                            incorrect: showResults && selectedOption === index && index !== currentQuestion.correctAnswer
+                        }"
                         @click="selectOption(index)"
                     >
                         {{ option }}
                     </div>
+                </div>
+                <div v-if="showResults && selectedOption !== currentQuestion.correctAnswer" class="correct-answer-message">
+                    Correct answer: {{ currentQuestion.options[currentQuestion.correctAnswer] }}
                 </div>
             </div>
             
@@ -608,26 +658,34 @@
         
         createApp({
             setup() {
-                // Sample data - in a real app, this would come from an API
+                // Sample data with images
                 const categories = ref([
-                    { id: 1, name: 'Fashion', emoji: '👗' },
-                    { id: 2, name: 'IPL', emoji: '🏏' },
-                    { id: 3, name: 'Movies', emoji: '🎬' },
-                    { id: 4, name: 'Football', emoji: '⚽' },
-                    { id: 5, name: 'Cartoons', emoji: '📺' },
-                    { id: 6, name: 'Anime', emoji: '🇯🇵' },
-                    { id: 7, name: 'Nature', emoji: '🌿' },
-                    { id: 8, name: 'Wildlife', emoji: '🦁' },
-                    { id: 9, name: 'Social Media', emoji: '📱' },
-                    { id: 10, name: 'Space', emoji: '🚀' },
-                    { id: 11, name: 'Flowers', emoji: '🌸' }
+                    { id: 1, name: 'Fashion', image: 'https://i.pinimg.com/736x/b7/f7/19/b7f719fff796342b7684cc1ef742e087.jpg' },
+                    { id: 2, name: 'IPL', image: 'https://i.pinimg.com/736x/25/d8/3b/25d83bd1e4d1efdd545b3156a8e5b46e.jpg' },
+                    { id: 3, name: 'Movies', image: 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80' },
+                    { id: 4, name: 'Football', image: 'https://images.unsplash.com/photo-1552667466-07770ae110d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80' },
+                    { id: 5, name: 'Cartoons', image: 'https://i.pinimg.com/736x/4d/b4/cc/4db4cc43defd406d7a1f06a2276d2101.jpg' },
+                    { id: 6, name: 'Anime', image: 'https://i.pinimg.com/736x/97/73/25/977325a85efc3df0e73b79dbc0e65cda.jpg' },
+                    { id: 7, name: 'Nature', image: 'https://i.pinimg.com/736x/76/9b/d1/769bd14bac1e03aed7d687f944c445be.jpg' },
+                    { id: 8, name: 'Wildlife', image: 'https://i.pinimg.com/736x/c9/5d/ab/c95dab412fd379c8528d430b7b8d14c3.jpg' },
+                    { id: 9, name: 'Social Media', image: 'https://i.pinimg.com/736x/05/46/65/054665ba2d98933dbf4077339f33a1a9.jpg' },
+                    { id: 10, name: 'Space', image: 'https://images.unsplash.com/photo-1464802686167-b939a6910659?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1450&q=80' },
+                    { id: 11, name: 'Flowers', image: 'https://i.pinimg.com/736x/ba/0e/98/ba0e98ddbd2c6bcc5ab21bf21019de5c.jpg' }
                 ]);
                 
                 // Sample questions - in a real app, this would come from an API
                 const questionsDatabase = {
                     1: generateFashionQuestions(),
-                    11: generateFlowerQuestions()
-                    // Other categories would be similarly populated
+                    2: generateIPLQuestions(),       // IPL
+                    3: generateMoviesQuestions(),    // Movies
+                    4: generateFootballQuestions(),  // Football
+                    5: generateCartoonsQuestions(),  // Cartoons
+                    6: generateAnimeQuestions(),     // Anime
+                    7: generateNatureQuestions(),    // Nature
+                    8: generateWildlifeQuestions(),  // Wildlife
+                    9: generateSocialMediaQuestions(), // Social Media
+                    10: generateSpaceQuestions(),    // Space
+                    11: generateFlowerQuestions()    // Flowers
                 };
                 
                 const currentPage = ref('home');
@@ -642,11 +700,14 @@
                 const timeUp = ref(false);
                 const mobileMenuOpen = ref(false);
                 const mobileDropdownOpen = ref(null);
+                const showResults = ref(false);
                 
                 const filteredCategories = computed(() => {
                     if (!searchQuery.value) return categories.value;
+                    const query = searchQuery.value.toLowerCase();
                     return categories.value.filter(category => 
-                        category.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+                        category.name.toLowerCase().includes(query) ||
+                        category.name.toLowerCase().split(' ').some(word => word.startsWith(query))
                     );
                 });
                 
@@ -654,6 +715,14 @@
                     if (!currentQuiz.value) return null;
                     return currentQuiz.value.questions[currentQuestionIndex.value];
                 });
+                
+                function performSearch() {
+                    // The computed property filteredCategories will automatically update
+                    // We just need to ensure the search query is properly bound
+                    if (searchQuery.value.trim() === '') {
+                        return categories.value;
+                    }
+                }
                 
                 function startQuiz(categoryId) {
                     // In a real app, this would fetch questions from an API
@@ -675,6 +744,7 @@
                     userAnswers.value = [];
                     timeLeft.value = 1800; // Reset timer to 30 minutes
                     timeUp.value = false;
+                    showResults.value = false;
                     currentPage.value = 'quiz';
                     mobileMenuOpen.value = false;
                     
@@ -706,25 +776,36 @@
                 }
                 
                 function selectOption(index) {
-                    selectedOption.value = index;
+                    if (!showResults.value) {
+                        selectedOption.value = index;
+                    }
                 }
                 
                 function nextQuestion() {
+                    // Show results for the current question
+                    showResults.value = true;
+                    
                     // Save the answer
                     userAnswers.value[currentQuestionIndex.value] = selectedOption.value;
                     
-                    if (currentQuestionIndex.value < currentQuiz.value.questions.length - 1) {
-                        currentQuestionIndex.value++;
-                        selectedOption.value = userAnswers.value[currentQuestionIndex.value] ?? null;
-                    } else {
-                        clearInterval(timerInterval.value);
-                        calculateScore();
-                        currentPage.value = 'results';
-                    }
+                    // Add a small delay before moving to next question
+                    setTimeout(() => {
+                        showResults.value = false;
+                        
+                        if (currentQuestionIndex.value < currentQuiz.value.questions.length - 1) {
+                            currentQuestionIndex.value++;
+                            selectedOption.value = userAnswers.value[currentQuestionIndex.value] ?? null;
+                        } else {
+                            clearInterval(timerInterval.value);
+                            calculateScore();
+                            currentPage.value = 'results';
+                        }
+                    }, 1500); // 1.5 second delay to show the result
                 }
                 
                 function previousQuestion() {
                     if (currentQuestionIndex.value > 0) {
+                        showResults.value = false;
                         currentQuestionIndex.value--;
                         selectedOption.value = userAnswers.value[currentQuestionIndex.value] ?? null;
                     }
@@ -779,8 +860,10 @@
                     timeUp,
                     mobileMenuOpen,
                     mobileDropdownOpen,
+                    showResults,
                     filteredCategories,
                     currentQuestion,
+                    performSearch,
                     startQuiz,
                     selectOption,
                     nextQuestion,
@@ -807,7 +890,146 @@
                     options: ["Nova Check", "Tartan", "Paisley", "Houndstooth"],
                     correctAnswer: 0
                 },
-                // More fashion questions...
+                {
+                    text: "Who is considered the 'King of Fashion'?",
+                    options: ["Karl Lagerfeld", "Giorgio Armani", "Ralph Lauren", "Tom Ford"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which designer created the 'Little Black Dress' concept?",
+                    options: ["Coco Chanel", "Christian Dior", "Yves Saint Laurent", "Elsa Schiaparelli"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What year was the first Fashion Week held in New York?",
+                    options: ["1943", "1955", "1967", "1972"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which brand is famous for its red-soled shoes?",
+                    options: ["Jimmy Choo", "Manolo Blahnik", "Christian Louboutin", "Stuart Weitzman"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What material is traditionally used to make a trench coat?",
+                    options: ["Cotton gabardine", "Denim", "Leather", "Silk"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which fashion designer created the 'New Look' in 1947?",
+                    options: ["Cristóbal Balenciaga", "Christian Dior", "Hubert de Givenchy", "Pierre Cardin"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the most expensive fabric in the world?",
+                    options: ["Vicuña wool", "Cashmere", "Silk", "Linen"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which accessory did Coco Chanel popularize?",
+                    options: ["Pearl necklaces", "Costume jewelry", "Oversized sunglasses", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What was the first luxury brand to sell online?",
+                    options: ["Gucci", "Prada", "Burberry", "Louis Vuitton"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which designer created the wrap dress?",
+                    options: ["Diane von Fürstenberg", "Donna Karan", "Vera Wang", "Carolina Herrera"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What fashion item was invented by Levi Strauss?",
+                    options: ["T-shirt", "Blue jeans", "Baseball cap", "Sneakers"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which fashion capital is known for its minimalist style?",
+                    options: ["Paris", "Milan", "Tokyo", "Stockholm"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the most iconic Hermès bag?",
+                    options: ["The Kelly", "The Birkin", "The Constance", "The Lindy"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which designer pioneered the concept of ready-to-wear?",
+                    options: ["Yves Saint Laurent", "Pierre Cardin", "Mary Quant", "André Courrèges"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the traditional color of a bridal gown in China?",
+                    options: ["White", "Red", "Gold", "Pink"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which fashion magazine is the oldest in the world?",
+                    options: ["Vogue", "Harper's Bazaar", "Elle", "GQ"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What was the first designer perfume?",
+                    options: ["Chanel No. 5", "Shalimar", "Joy", "L'Air du Temps"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which fashion house created the 'It Bag' phenomenon?",
+                    options: ["Fendi", "Prada", "Chloé", "Balenciaga"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the most counterfeited fashion brand?",
+                    options: ["Louis Vuitton", "Gucci", "Chanel", "Rolex"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which designer was known for his safety pin dresses?",
+                    options: ["Alexander McQueen", "John Galliano", "Jean Paul Gaultier", "Vivienne Westwood"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the traditional fabric used for Scottish kilts?",
+                    options: ["Tartan wool", "Tweed", "Flannel", "Corduroy"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which fashion designer created the 'naked dress'?",
+                    options: ["Tom Ford", "Donatella Versace", "Riccardo Tisci", "Alexander Wang"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What was the first fashion brand to feature a plus-size model?",
+                    options: ["Dove", "Lane Bryant", "Calvin Klein", "Ralph Lauren"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which designer created the first power suit for women?",
+                    options: ["Giorgio Armani", "Yves Saint Laurent", "Donna Karan", "Ralph Lauren"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the most expensive handbag ever sold?",
+                    options: ["Hermès Birkin", "Chanel Diamond Forever", "Mouawad 1001 Nights", "Judith Leiber Couture"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which fashion house was the first to livestream a runway show?",
+                    options: ["Burberry", "Gucci", "Louis Vuitton", "Prada"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the most expensive fabric in the world?",
+                    options: ["Vicuña wool", "Spider silk", "Lotus fiber", "Sea silk"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which designer created the first unisex fragrance?",
+                    options: ["Calvin Klein", "Davidoff", "Aramis", "Jil Sander"],
+                    correctAnswer: 0
+                }
             ];
         }
         
@@ -884,111 +1106,85 @@
                     correctAnswer: 0  
                 },
                 {
-                    
-                text: "What flower is the national symbol of India?",  
-                options: ["Rose", "Lotus", "Jasmine", "Marigold"],  
-                correctAnswer: 1  
- 
+                    text: "What flower is the national symbol of India?",  
+                    options: ["Rose", "Lotus", "Jasmine", "Marigold"],  
+                    correctAnswer: 1  
                 },
                 {
-                    
-                text: "Which flower is associated with the phrase 'say it with flowers'?",  
-                options: ["Rose", "Tulip", "Carnation", "Daisy"],  
-                correctAnswer: 2
+                    text: "Which flower is associated with the phrase 'say it with flowers'?",  
+                    options: ["Rose", "Tulip", "Carnation", "Daisy"],  
+                    correctAnswer: 2
                 },
                 {
                     text: "Which flower is often associated with the Greek myth of Narcissus?",  
-                options: ["Daffodil", "Rose", "Lily", "Tulip"],  
-                correctAnswer: 0  
-
-              
+                    options: ["Daffodil", "Rose", "Lily", "Tulip"],  
+                    correctAnswer: 0  
                 },
                 {
                     text: "What flower is the symbol of the LGBTQ+ pride movement?",  
-                options: ["Rose", "Lavender", "Orchid", "Carnation"],  
-                correctAnswer: 1  
-
-                
+                    options: ["Rose", "Lavender", "Orchid", "Carnation"],  
+                    correctAnswer: 1  
                 },
                 {
                     text: "Which flower is used to make the spice saffron?",  
-                options: ["Rose", "Lavender", "Saffron Crocus", "Marigold"],  
-                correctAnswer: 2  
-
-               
+                    options: ["Rose", "Lavender", "Saffron Crocus", "Marigold"],  
+                    correctAnswer: 2  
                 },
                 {
                     text: "What flower is the birth flower for the month of February?",  
-                options: ["Violet", "Rose", "Iris", "Daffodil"],  
-                correctAnswer: 0  
-
-              
+                    options: ["Violet", "Rose", "Iris", "Daffodil"],  
+                    correctAnswer: 0  
                 },
                 {
                     text: "Which flower is often associated with funerals and sympathy?",  
-                options: ["Lily", "Sunflower", "Daisy", "Tulip"],  
-                correctAnswer: 0  
-
+                    options: ["Lily", "Sunflower", "Daisy", "Tulip"],  
+                    correctAnswer: 0  
                 },
                 {
-                    
-                text: "What flower is known for its ability to track the sun's movement?",  
-                options: ["Daisy", "Sunflower", "Marigold", "Hibiscus"],  
-                correctAnswer: 1  
+                    text: "What flower is known for its ability to track the sun's movement?",  
+                    options: ["Daisy", "Sunflower", "Marigold", "Hibiscus"],  
+                    correctAnswer: 1  
                 },
                 {
                     text: "What flower is traditionally given on a 10th wedding anniversary?",  
-                options: ["Daffodil", "Rose", "Tulip", "Daisy"],  
-                correctAnswer: 0  
-
-               
+                    options: ["Daffodil", "Rose", "Tulip", "Daisy"],  
+                    correctAnswer: 0  
                 },
                 {
                     text: "Which flower is often associated with remembrance and is worn on Memorial Day?",  
-                options: ["Poppy", "Lily", "Violet", "Daisy"],  
-                correctAnswer: 0  
-
-               
+                    options: ["Poppy", "Lily", "Violet", "Daisy"],  
+                    correctAnswer: 0  
                 },
                 {
                     text: "What flower is the birth flower for the month of April?",  
-                options: ["Daisy", "Rose", "Sweet Pea", "Tulip"],  
-                correctAnswer: 0  
-
-                
+                    options: ["Daisy", "Rose", "Sweet Pea", "Tulip"],  
+                    correctAnswer: 0  
                 },
                 {
                     text: "Which flower is commonly used to make essential oils and perfumes?",  
-                options: ["Lavender", "Daisy", "Sunflower", "Orchid"],  
-                correctAnswer: 0  
-
+                    options: ["Lavender", "Daisy", "Sunflower", "Orchid"],  
+                    correctAnswer: 0  
                 },
                 {
-                    
-                text: "What flower is known as the 'Queen of the Night' due to its nighttime blooming?",  
-                options: ["Moonflower", "Orchid", "Jasmine", "Evening Primrose"],  
-                correctAnswer: 0 
+                    text: "What flower is known as the 'Queen of the Night' due to its nighttime blooming?",  
+                    options: ["Moonflower", "Orchid", "Jasmine", "Evening Primrose"],  
+                    correctAnswer: 0 
                 },
                 {
-                    
-                text: "Which of these flowers is known for its strong, sweet fragrance?",  
-                options: ["Daisy", "Sunflower", "Jasmine", "Marigold"],  
-                correctAnswer: 2  
-
-               
+                    text: "Which of these flowers is known for its strong, sweet fragrance?",  
+                    options: ["Daisy", "Sunflower", "Jasmine", "Marigold"],  
+                    correctAnswer: 2  
                 },
                 {
                     text: "What flower is the national symbol of Japan?",  
-                options: ["Cherry Blossom", "Rose", "Lotus", "Orchid"],  
-                correctAnswer: 0  
-
+                    options: ["Cherry Blossom", "Rose", "Lotus", "Orchid"],  
+                    correctAnswer: 0  
                 },
                 {
-                    
-                text: "Which flower is known as the 'flower of the sun'?",  
-                options: ["Daisy", "Sunflower", "Marigold", "Hibiscus"],  
-                correctAnswer: 1  
-                },
+                    text: "Which flower is known as the 'flower of the sun'?",  
+                    options: ["Daisy", "Sunflower", "Marigold", "Hibiscus"],  
+                    correctAnswer: 1  
+                }
             ];
         }
 
@@ -998,36 +1194,28 @@
                     text: "Which animal is known as the 'King of the Jungle'?",  
                     options: ["Lion", "Tiger", "Elephant", "Gorilla"],  
                     correctAnswer: 0  
-
                 },
                 {
                     text: "What is the smallest species of penguin?",  
                     options: ["Emperor Penguin", "Little Blue Penguin", "Adélie Penguin", "Rockhopper Penguin"],  
                     correctAnswer: 1  
-  
                 },
                 {
                     text: "Which animal is known for its ability to regrow lost limbs?",  
                     options: ["Starfish", "Lizard", "Octopus", "Salamander"],  
                     correctAnswer: 3  
-
-                    
                 },
                 {
                     text: "What is the largest species of shark?",  
                     options: ["Great White Shark", "Hammerhead Shark", "Whale Shark", "Tiger Shark"],  
                     correctAnswer: 2  
-
                 },
                 {
-                    
                     text: "Which animal is the closest living relative to the T-Rex?",  
                     options: ["Alligator", "Chicken", "Komodo Dragon", "Ostrich"],  
                     correctAnswer: 1  
-
                 },
                 {
-                    
                     text: "What is the only marsupial native to North America?",  
                     options: ["Kangaroo", "Koala", "Opossum", "Tasmanian Devil"],  
                     correctAnswer: 2 
@@ -1036,36 +1224,26 @@
                     text: "What is the largest species of bear?",  
                     options: ["Grizzly Bear", "Polar Bear", "Black Bear", "Panda Bear"],  
                     correctAnswer: 1  
-
-                   
                 },
                 {
                     text: "Which animal is known for playing dead when threatened?",  
                     options: ["Opossum", "Armadillo", "Skunk", "Porcupine"],  
                     correctAnswer: 0  
-
-                   
                 },
                 {
                     text: "What is the only venomous snake found in the UK?",  
                     options: ["Cobra", "Adder", "Rattlesnake", "Viper"],  
                     correctAnswer: 1  
-
-                   
                 },
                 {
                     text: "Which animal has the longest lifespan of any mammal?",  
                     options: ["Elephant", "Bowhead Whale", "Giant Tortoise", "Human"],  
                     correctAnswer: 1  
-
                 },
                 {
-                    
                     text: "What is the tallest animal in the world?",  
                     options: ["Elephant", "Giraffe", "Ostrich", "Moose"],  
                     correctAnswer: 1  
-
-                   
                 },
                 {
                     text: "Which big cat is also known as the 'ghost of the mountains'?",  
@@ -1076,36 +1254,26 @@
                     text: "What is the national animal of Australia?",  
                     options: ["Kangaroo", "Koala", "Emu", "Platypus"],  
                     correctAnswer: 0  
-
-                    
                 },
                 {
                     text: "Which animal can change its color to blend into its surroundings?",  
                     options: ["Frog", "Octopus", "Chameleon", "Cuttlefish"],  
                     correctAnswer: 2  
-
-                   
                 },
                 {
                     text: "What is the only continent where giraffes live in the wild?",  
                     options: ["Asia", "Africa", "South America", "Australia"],  
                     correctAnswer: 1  
-
-                    
                 },
                 {
                     text: "Which animal is known as the 'ship of the desert'?",  
                     options: ["Camel", "Horse", "Donkey", "Elephant"],  
                     correctAnswer: 0  
-
-                  
                 },
                 {
                     text: "What is the slowest mammal in the world?",  
                     options: ["Tortoise", "Sloth", "Manatee", "Koala"],  
                     correctAnswer: 1  
-
-                   
                 },
                 {
                     text: "Which bird is the symbol of the United States?",  
@@ -1116,89 +1284,1309 @@
                     text: "What is the largest land animal in the world?",  
                     options: ["Polar Bear", "African Elephant", "Hippopotamus", "Giraffe"],  
                     correctAnswer: 1  
-
-                  
                 },
                 {
                     text: "Which bird is the fastest animal on Earth in a dive?",  
                     options: ["Eagle", "Hawk", "Peregrine Falcon", "Ostrich"],  
                     correctAnswer: 2  
-
-                   
                 },
                 {
                     text: "What is the only mammal capable of true flight?",  
                     options: ["Flying Squirrel", "Bat", "Penguin", "Owl"],  
                     correctAnswer: 1  
-
-                   
                 },
                 {
                     text: "Which big cat is the largest in the world?",  
                     options: ["Lion", "Jaguar", "Tiger", "Leopard"],  
                     correctAnswer: 2  
-
-                   
                 },
                 {
                     text: "What animal is known for its black and white stripes?",  
                     options: ["Zebra", "Panda", "Orca", "Skunk"],  
                     correctAnswer: 0  
-
                 },
                 {
-                    
                     text: "Which marine animal is the largest on Earth?",  
                     options: ["Great White Shark", "Blue Whale", "Giant Squid", "Killer Whale"],  
                     correctAnswer: 1 
                 },
                 {
-            
-                },
-                {
-                    
                     text: "Which animal has the strongest bite force of any living creature?",  
                     options: ["Great White Shark", "Saltwater Crocodile", "Hippopotamus", "Gorilla"],  
                     correctAnswer: 1
                 },
                 {
-                    
                     text: "What is the national animal of Canada?",  
                     options: ["Moose", "Beaver", "Polar Bear", "Bald Eagle"],  
                     correctAnswer: 1  
-
                 },
                 {
                     text: "Which animal is known for its ability to mimic human speech?",  
                     options: ["Crow", "Dolphin", "Parrot", "Elephant"],  
                     correctAnswer: 2  
-
                 },
                 {
                     text: "What is the fastest land animal?",  
                     options: ["Lion", "Cheetah", "Greyhound", "Pronghorn Antelope"],  
                     correctAnswer: 1  
-
-                      
                 },
                 {
                     text: "Which animal can rotate its head up to 270 degrees?",  
                     options: ["Owl", "Eagle", "Parrot", "Flamingo"],  
                     correctAnswer: 0  
-
-                    
                 },
                 {
-                   
-                    
                     text: "What is the only continent without native snakes?",  
                     options: ["Australia", "Antarctica", "Europe", "North America"],  
                     correctAnswer: 1
-                },
+                }
             ];
         }
+
+        function generateIPLQuestions() {
+            return [
+                {
+                    text: "Which team has won the most IPL titles?",
+                    options: ["Mumbai Indians", "Chennai Super Kings", "Kolkata Knight Riders", "Royal Challengers Bangalore"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who is the all-time leading run scorer in IPL?",
+                    options: ["Virat Kohli", "Suresh Raina", "David Warner", "Rohit Sharma"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which bowler has taken the most wickets in IPL history?",
+                    options: ["Lasith Malinga", "Dwayne Bravo", "Amit Mishra", "Yuzvendra Chahal"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Who hit the first century in IPL history?",
+                    options: ["Brendon McCullum", "Chris Gayle", "Adam Gilchrist", "Virender Sehwag"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which team was the first winner of IPL?",
+                    options: ["Rajasthan Royals", "Deccan Chargers", "Chennai Super Kings", "Kolkata Knight Riders"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who has scored the fastest century in IPL?",
+                    options: ["Chris Gayle", "AB de Villiers", "KL Rahul", "David Miller"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which player has won the most 'Player of the Match' awards in IPL?",
+                    options: ["AB de Villiers", "Chris Gayle", "Rohit Sharma", "MS Dhoni"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which team has the highest team total in IPL?",
+                    options: ["Royal Challengers Bangalore", "Mumbai Indians", "Kings XI Punjab", "Chennai Super Kings"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who has taken the most catches in IPL history?",
+                    options: ["Suresh Raina", "Rohit Sharma", "Virat Kohli", "MS Dhoni"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which bowler has the best bowling figures in an IPL match?",
+                    options: ["Alzarri Joseph", "Sohail Tanvir", "Anil Kumble", "Adam Zampa"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who was the first Indian player to score an IPL century?",
+                    options: ["Manish Pandey", "Rohit Sharma", "Virat Kohli", "Suresh Raina"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which team has the longest winning streak in IPL?",
+                    options: ["Kolkata Knight Riders", "Mumbai Indians", "Chennai Super Kings", "Royal Challengers Bangalore"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who has hit the most sixes in IPL history?",
+                    options: ["Chris Gayle", "AB de Villiers", "MS Dhoni", "Rohit Sharma"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which player has won the most Orange Caps in IPL?",
+                    options: ["David Warner", "Virat Kohli", "Chris Gayle", "Shaun Marsh"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Who has the highest individual score in IPL?",
+                    options: ["Chris Gayle", "Brendon McCullum", "AB de Villiers", "KL Rahul"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which team has never won the IPL?",
+                    options: ["Delhi Capitals", "Royal Challengers Bangalore", "Punjab Kings", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Who was the first player to take a hat-trick in IPL?",
+                    options: ["Amit Mishra", "Lakshmipathy Balaji", "Yuvraj Singh", "Shane Warne"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which team has the lowest team total in IPL?",
+                    options: ["Royal Challengers Bangalore", "Kolkata Knight Riders", "Delhi Capitals", "Rajasthan Royals"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Who has the best bowling economy rate in IPL (minimum 500 balls)?",
+                    options: ["Rashid Khan", "Sunil Narine", "Anil Kumble", "Muttiah Muralitharan"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which player has played for the most teams in IPL?",
+                    options: ["Aaron Finch", "Dwayne Bravo", "Parthiv Patel", "Yuvraj Singh"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Who has the most dismissals as wicketkeeper in IPL?",
+                    options: ["MS Dhoni", "Dinesh Karthik", "Robin Uthappa", "Wriddhiman Saha"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which team has the highest win percentage in IPL?",
+                    options: ["Mumbai Indians", "Chennai Super Kings", "Kolkata Knight Riders", "Sunrisers Hyderabad"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Who was the first captain to win two IPL titles?",
+                    options: ["MS Dhoni", "Rohit Sharma", "Gautam Gambhir", "Shane Warne"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which player has won the most Purple Caps in IPL?",
+                    options: ["Lasith Malinga", "Dwayne Bravo", "Bhuvneshwar Kumar", "Imran Tahir"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Who has the most runs in a single IPL season?",
+                    options: ["Virat Kohli", "David Warner", "Chris Gayle", "Kane Williamson"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which team has the most consecutive playoff appearances?",
+                    options: ["Chennai Super Kings", "Mumbai Indians", "Kolkata Knight Riders", "Sunrisers Hyderabad"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who has the most fifties in IPL history?",
+                    options: ["David Warner", "Virat Kohli", "Suresh Raina", "Rohit Sharma"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which overseas player has scored the most runs in IPL?",
+                    options: ["AB de Villiers", "David Warner", "Chris Gayle", "Shane Watson"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Who has the most dot balls in IPL history?",
+                    options: ["Harbhajan Singh", "Bhuvneshwar Kumar", "Lasith Malinga", "Ravichandran Ashwin"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which team has the most wins in IPL history?",
+                    options: ["Mumbai Indians", "Chennai Super Kings", "Kolkata Knight Riders", "Royal Challengers Bangalore"],
+                    correctAnswer: 0
+                },
+
+            ]
+        }
         
-        
+        function generateMoviesQuestions() {
+            return [
+                {
+                    text: "Which movie won the first Academy Award for Best Picture in 1929?",
+                    options: ["Wings", "Sunrise", "The Jazz Singer", "Metropolis"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who played Jack Dawson in 'Titanic' (1997)?",
+                    options: ["Brad Pitt", "Johnny Depp", "Leonardo DiCaprio", "Matt Damon"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which movie features the quote 'May the Force be with you'?",
+                    options: ["Star Trek", "Star Wars", "The Matrix", "Guardians of the Galaxy"],
+                    correctAnswer: 1
+                },
+
+                {
+                    text: "What is the highest-grossing film of all time (as of 2023)?",
+                    options: ["Avatar", "Avengers: Endgame", "Titanic", "Avatar: The Way of Water"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which actor played Tony Stark/Iron Man in the MCU?",
+                    options: ["Chris Evans", "Robert Downey Jr.", "Chris Hemsworth", "Mark Ruffalo"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What was the first fully computer-animated feature film?",
+                    options: ["Toy Story", "Shrek", "A Bug's Life", "The Lion King"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which movie features a young lion named Simba?",
+                    options: ["Jungle Book", "Tarzan", "The Lion King", "Madagascar"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Who directed 'The Dark Knight' trilogy?",
+                    options: ["Steven Spielberg", "Christopher Nolan", "Martin Scorsese", "Quentin Tarantino"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which movie features the song 'Let It Go'?",
+                    options: ["Tangled", "Moana", "Frozen", "Brave"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the hobbit played by Elijah Wood in 'Lord of the Rings'?",
+                    options: ["Samwise", "Bilbo", "Frodo", "Merry"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which actress played Katniss Everdeen in 'The Hunger Games'?",
+                    options: ["Emma Watson", "Jennifer Lawrence", "Kristen Stewart", "Shailene Woodley"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What year was 'Jurassic Park' first released?",
+                    options: ["1989", "1993", "1997", "2001"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which movie features a character saying 'Here's looking at you, kid'?",
+                    options: ["Gone with the Wind", "Casablanca", "The Godfather", "Citizen Kane"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Who played Neo in 'The Matrix'?",
+                    options: ["Keanu Reeves", "Brad Pitt", "Tom Cruise", "Will Smith"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which Disney princess has a raccoon and hummingbird as friends?",
+                    options: ["Ariel", "Pocahontas", "Jasmine", "Belle"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the wizarding school in 'Harry Potter'?",
+                    options: ["Hogwarts", "Beauxbatons", "Durmstrang", "Ilvermorny"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which movie features a toy cowboy named Woody?",
+                    options: ["Toy Story", "Small Soldiers", "The Lego Movie", "Robots"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Who directed 'Pulp Fiction'?",
+                    options: ["Martin Scorsese", "Quentin Tarantino", "Steven Spielberg", "David Fincher"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which movie won Best Picture at the 2023 Oscars?",
+                    options: ["The Banshees of Inisherin", "Everything Everywhere All at Once", "Elvis", "Top Gun: Maverick"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the fictional African country in 'Black Panther'?",
+                    options: ["Zamunda", "Wakanda", "Genovia", "Latveria"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which actor played the Joker in 'The Dark Knight'?",
+                    options: ["Jared Leto", "Jack Nicholson", "Heath Ledger", "Joaquin Phoenix"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the highest-grossing animated film of all time?",
+                    options: ["Frozen", "The Lion King (2019)", "Incredibles 2", "Minions"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which movie features a character saying 'I'll be back'?",
+                    options: ["Die Hard", "Predator", "The Terminator", "Rambo"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Who played Captain Jack Sparrow in 'Pirates of the Caribbean'?",
+                    options: ["Orlando Bloom", "Johnny Depp", "Geoffrey Rush", "Javier Bardem"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which movie features the fictional sport Quidditch?",
+                    options: ["Eragon", "Percy Jackson", "Harry Potter", "The Chronicles of Narnia"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the shark in 'Jaws'?",
+                    options: ["Bruce", "Jaws", "Chomper", "Mako"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which movie features the song 'My Heart Will Go On'?",
+                    options: ["Pearl Harbor", "The Notebook", "Titanic", "Ghost"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Who played Wolverine in the 'X-Men' movies?",
+                    options: ["Ryan Reynolds", "Hugh Jackman", "Chris Evans", "Chris Hemsworth"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which movie features the fictional country of Genovia?",
+                    options: ["Enchanted", "The Princess Diaries", "Ella Enchanted", "A Cinderella Story"],
+                    correctAnswer: 1
+                },
+                {   
+                    text: "What was the first Marvel Cinematic Universe movie released in 2008?",
+                    options: ["The Incredible Hulk", "Captain America", "Thor", "Iron Man"],
+                    correctAnswer: 3
+                },
+            ]
+        }
+        function generateFootballQuestions() {
+            return [
+                {
+                    text: "Which country won the 2022 FIFA World Cup?",
+                    options: ["France", "Argentina", "Brazil", "Germany"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "How many players are on a football team during a match?",
+                    options: ["9", "10", "11", "12"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which player has won the most Ballon d'Or awards?",
+                    options: ["Cristiano Ronaldo", "Lionel Messi", "Michel Platini", "Johan Cruyff"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the duration of a standard football match?",
+                    options: ["80 minutes", "90 minutes", "100 minutes", "120 minutes"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which club has won the most UEFA Champions League titles?",
+                    options: ["Barcelona", "Bayern Munich", "Real Madrid", "AC Milan"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the trophy awarded to the World Cup winners?",
+                    options: ["Jules Rimet Trophy", "FIFA Trophy", "World Cup", "Golden Cup"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which country hosted the 2018 FIFA World Cup?",
+                    options: ["Brazil", "France", "Russia", "Qatar"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the offside rule in football?",
+                    options: ["A player can't touch the ball with hands", "A player can't be behind all defenders when ball is passed", "A player can't score from own half", "A player can't pass backwards"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which player is known as 'El Fenomeno'?",
+                    options: ["Ronaldinho", "Ronaldo", "Romario", "Roberto Carlos"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the maximum number of substitutions allowed in most professional matches?",
+                    options: ["3", "5", "7", "Unlimited"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which English club is known as 'The Red Devils'?",
+                    options: ["Liverpool", "Arsenal", "Manchester United", "Chelsea"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the diameter of a football (soccer ball) in inches?",
+                    options: ["22-24", "25-27", "27-28", "29-30"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which country has won the most Copa América titles?",
+                    options: ["Brazil", "Argentina", "Uruguay", "Chile"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What does FIFA stand for?",
+                    options: ["Federation of International Football Associations", "Fédération Internationale de Football Association", "Football International Federation Association", "Federation of International Football Athletes"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which player scored the 'Hand of God' goal?",
+                    options: ["Diego Maradona", "Lionel Messi", "Pele", "Zinedine Zidane"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of Barcelona's home stadium?",
+                    options: ["Santiago Bernabéu", "Camp Nou", "Wanda Metropolitano", "Allianz Arena"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which country won the first ever World Cup in 1930?",
+                    options: ["Brazil", "Uruguay", "Italy", "Argentina"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What color card indicates a sending-off in football?",
+                    options: ["Yellow", "Red", "Black", "White"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which African country has won the most Africa Cup of Nations titles?",
+                    options: ["Nigeria", "Ghana", "Egypt", "Cameroon"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the nickname of the Brazilian national team?",
+                    options: ["The Blues", "The Samba Boys", "The Canaries", "The Seleção"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which player holds the record for most goals in a calendar year?",
+                    options: ["Cristiano Ronaldo", "Lionel Messi", "Gerd Müller", "Pele"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the minimum number of players needed to avoid forfeiting a match?",
+                    options: ["5", "6", "7", "8"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which country has appeared in most World Cup finals without winning?",
+                    options: ["Netherlands", "Hungary", "Sweden", "Czech Republic"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the annual match between Barcelona and Real Madrid?",
+                    options: ["Derby della Madonnina", "El Clásico", "Der Klassiker", "The North West Derby"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which country won the 2020 European Championship?",
+                    options: ["France", "Portugal", "Italy", "England"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the maximum length of added time (injury time) that can be played?",
+                    options: ["5 minutes", "10 minutes", "15 minutes", "No limit"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which player has made the most Champions League appearances?",
+                    options: ["Iker Casillas", "Cristiano Ronaldo", "Xavi", "Ryan Giggs"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the French national stadium?",
+                    options: ["Parc des Princes", "Stade de France", "Orange Vélodrome", "Allianz Riviera"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which country has qualified for every World Cup tournament?",
+                    options: ["Argentina", "Germany", "Brazil", "Italy"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the minimum age to referee a professional football match?",
+                    options: ["16", "18", "21", "25"],
+                    correctAnswer: 1
+                },
+            ]
+        }
+
+        function generateCartoonsQuestions() {
+            return [
+                {
+                    text: "Which cartoon character lives in a pineapple under the sea?",
+                    options: ["Patrick Star", "Squidward Tentacles", "SpongeBob SquarePants", "Mr. Krabs"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the yellow family in 'The Simpsons'?",
+                    options: ["The Smiths", "The Griffins", "The Simpsons", "The Flanders"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which cartoon features a boy and his magical blue dog?",
+                    options: ["Courage the Cowardly Dog", "Blue's Clues", "Dora the Explorer", "Bluey"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What was the first animated feature film from Walt Disney?",
+                    options: ["Cinderella", "Snow White and the Seven Dwarfs", "Pinocchio", "Fantasia"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which cartoon character is known for saying 'What's up, Doc?'",
+                    options: ["Mickey Mouse", "Bugs Bunny", "Daffy Duck", "Elmer Fudd"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the town in 'Scooby-Doo'?",
+                    options: ["Crystal Cove", "Gravity Falls", "Springfield", "Bedrock"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a boy genius and his robot?",
+                    options: ["Dexter's Laboratory", "Jimmy Neutron", "The Powerpuff Girls", "Ben 10"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the main character in 'Adventure Time'?",
+                    options: ["Jake the Dog", "Finn the Human", "Princess Bubblegum", "Ice King"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which cartoon features a secret agent hamster?",
+                    options: ["Pinky and the Brain", "Kim Possible", "Totally Spies", "Phineas and Ferb"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the bear in 'We Bare Bears'?",
+                    options: ["Grizzly", "Panda", "Ice Bear", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which cartoon features three girls with superpowers?",
+                    options: ["Totally Spies", "The Powerpuff Girls", "Winx Club", "Sailor Moon"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the dog in 'Tom and Jerry'?",
+                    options: ["Spike", "Butch", "Tuffy", "Droopy"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon character is known for his red hat and mischievous behavior?",
+                    options: ["Dennis the Menace", "Calvin (of Calvin and Hobbes)", "Bart Simpson", "Ed, Edd n Eddy"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the main character in 'Dora the Explorer'?",
+                    options: ["Dora", "Diego", "Boots", "Swiper"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a group of teenage mutant ninjas?",
+                    options: ["Ben 10", "Teen Titans", "Teenage Mutant Ninja Turtles", "Avatar: The Last Airbender"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the cat in 'Garfield'?",
+                    options: ["Garfield", "Odie", "Nermal", "Arlene"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a young boy who can turn into aliens?",
+                    options: ["Danny Phantom", "Ben 10", "Generator Rex", "American Dragon: Jake Long"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the fairy in 'Fairly OddParents'?",
+                    options: ["Cosmo", "Wanda", "Poof", "Jorgen Von Strangle"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which cartoon features a talking horse?",
+                    options: ["BoJack Horseman", "Mr. Ed", "My Little Pony", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the main character in 'Rick and Morty'?",
+                    options: ["Rick Sanchez", "Morty Smith", "Jerry Smith", "Summer Smith"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which cartoon features a group of kids solving mysteries?",
+                    options: ["Scooby-Doo", "The Mystery Gang", "Gravity Falls", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the main character in 'Avatar: The Last Airbender'?",
+                    options: ["Aang", "Zuko", "Katara", "Sokka"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a group of superheroes living in Townsville?",
+                    options: ["Teen Titans", "The Powerpuff Girls", "Ben 10", "Generator Rex"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the main character in 'Phineas and Ferb'?",
+                    options: ["Phineas", "Ferb", "Candace", "Perry"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a group of kids who love chocolate?",
+                    options: ["The Rugrats", "Recess", "Ed, Edd n Eddy", "Codename: Kids Next Door"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the main character in 'Dexter's Laboratory'?",
+                    options: ["Dexter", "Dee Dee", "Mandark", "Mom"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a group of kids who fight evil in their dreams?",
+                    options: ["Codename: Kids Next Door", "The Grim Adventures of Billy and Mandy", "Kids WB", "All of the above"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the main character in 'The Amazing World of Gumball'?",
+                    options: ["Gumball", "Darwin", "Anais", "Richard"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which cartoon features a group of kids who live in a treehouse?",
+                    options: ["The Magic School Bus", "The Backyardigans", "The Wild Thornberrys", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the main character in 'The Loud House'?",
+                    options: ["Lincoln Loud", "Lori Loud", "Luna Loud", "Lynn Loud"],
+                    correctAnswer: 0
+                },
+            ]
+        }
+
+        function generateAnimeQuestions() {
+            return [
+                {
+                    text: "What is the main character's name in 'Dragon Ball Z'?",
+                    options: ["Vegeta", "Goku", "Piccolo", "Gohan"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which anime features Titans attacking humanity?",
+                    options: ["Tokyo Ghoul", "Attack on Titan", "Parasyte", "Berserk"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of Luffy's pirate crew in 'One Piece'?",
+                    options: ["Red Hair Pirates", "Straw Hat Pirates", "Blackbeard Pirates", "Whitebeard Pirates"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which anime is set in the Hidden Leaf Village?",
+                    options: ["Bleach", "Naruto", "Fairy Tail", "Hunter x Hunter"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What type of creature is Pikachu?",
+                    options: ["Mouse", "Rabbit", "Fox", "Cat"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which anime features alchemy as its main power system?",
+                    options: ["My Hero Academia", "Fullmetal Alchemist", "Black Clover", "Fire Force"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the Death Note's shinigami?",
+                    options: ["Light", "L", "Ryuk", "Misa"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which anime features the 'Hero Association'?",
+                    options: ["One Punch Man", "My Hero Academia", "Tiger & Bunny", "Soul Eater"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the main character's quirk in 'My Hero Academia'?",
+                    options: ["Explosion", "One For All", "Half-Cold Half-Hot", "Creation"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which anime features the 'Corpse Demon' creatures?",
+                    options: ["Demon Slayer", "Tokyo Ghoul", "Hellsing", "Blue Exorcist"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the virtual world in 'Sword Art Online'?",
+                    options: ["Aincrad", "Alfheim", "Gun Gale", "Underworld"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which anime features the 'Zodiac Knights'?",
+                    options: ["Saint Seiya", "Fate/stay night", "Bleach", "JoJo's Bizarre Adventure"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the main character in 'Death Note'?",
+                    options: ["L Lawliet", "Light Yagami", "Near", "Mello"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which anime features the 'Survey Corps'?",
+                    options: ["Attack on Titan", "Gundam", "Code Geass", "Psycho-Pass"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the demon inside Asta in 'Black Clover'?",
+                    options: ["Liebe", "Lucifero", "Zagred", "Mammon"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which anime features the 'Chimera Ant' arc?",
+                    options: ["Hunter x Hunter", "Bleach", "Yu Yu Hakusho", "One Piece"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the pink-haired healer in 'Fairy Tail'?",
+                    options: ["Erza", "Lucy", "Wendy", "Juvia"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which anime features the 'Akatsuki' organization?",
+                    options: ["Naruto", "Bleach", "One Piece", "Jujutsu Kaisen"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the cursed energy system in 'Jujutsu Kaisen'?",
+                    options: ["Chakra", "Nen", "Cursed Energy", "Reiatsu"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which anime features the 'Hero Killer Stain'?",
+                    options: ["One Punch Man", "My Hero Academia", "Tiger & Bunny", "Fire Force"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the main character in 'Cowboy Bebop'?",
+                    options: ["Jet", "Spike", "Faye", "Vicious"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which anime features the 'Gate' opening to another world?",
+                    options: ["Gate", "Re:Zero", "No Game No Life", "Overlord"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the demon school in 'Blue Exorcist'?",
+                    options: ["True Cross Academy", "Kuoh Academy", "Hope's Peak Academy", "UA High School"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which anime features the 'Seven Deadly Sins' as main characters?",
+                    options: ["Fate/stay night", "Nanatsu no Taizai", "Bleach", "Black Clover"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the virtual idol in 'Vivy: Fluorite Eye's Song'?",
+                    options: ["Vivy", "Miku", "Luka", "Rin"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which anime features the 'Espada' organization?",
+                    options: ["Bleach", "Naruto", "One Piece", "Fairy Tail"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the main character in 'Neon Genesis Evangelion'?",
+                    options: ["Shinji", "Asuka", "Rei", "Kaworu"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which anime features the 'Alchemist' profession as central to its story?",
+                    options: ["Fullmetal Alchemist", "Black Clover", "Fire Force", "Dr. Stone"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of the cursed speech user in 'Jujutsu Kaisen'?",
+                    options: ["Yuji", "Megumi", "Toge", "Nobara"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which anime features the 'Demon Slayer Corps'?",
+                    options: ["Demon Slayer", "Bleach", "Blue Exorcist", "Hellsing"],
+                    correctAnswer: 0
+                },
+            ]
+        }
+
+
+        function generateNatureQuestions() {
+            return [
+                {
+                    text: "What is the largest type of big cat in the world?",
+                    options: ["Lion", "Tiger", "Jaguar", "Leopard"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a type of cloud?",
+                    options: ["Cumulus", "Stratus", "Nimbus", "Florus"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the process by which plants make their own food?",
+                    options: ["Respiration", "Photosynthesis", "Transpiration", "Germination"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet is known as the 'Red Planet'?",
+                    options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the largest ocean on Earth?",
+                    options: ["Atlantic", "Indian", "Arctic", "Pacific"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which of these is not a primary color of light?",
+                    options: ["Red", "Blue", "Green", "Yellow"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the hardest natural substance on Earth?",
+                    options: ["Gold", "Iron", "Diamond", "Quartz"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which gas do plants absorb from the atmosphere?",
+                    options: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the tallest type of grass?",
+                    options: ["Wheat", "Bamboo", "Sugar cane", "Corn"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a type of rock?",
+                    options: ["Igneous", "Sedimentary", "Metamorphic", "Luminous"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the largest living structure on Earth?",
+                    options: ["Amazon Rainforest", "Great Barrier Reef", "Himalayan Mountains", "Sahara Desert"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these birds cannot fly?",
+                    options: ["Penguin", "Ostrich", "Kiwi", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the study of weather called?",
+                    options: ["Geology", "Meteorology", "Biology", "Astronomy"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet has the most moons?",
+                    options: ["Earth", "Mars", "Jupiter", "Saturn"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the largest type of deer?",
+                    options: ["Elk", "Moose", "Reindeer", "White-tailed deer"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a renewable energy source?",
+                    options: ["Solar", "Wind", "Coal", "Hydroelectric"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the world's largest desert?",
+                    options: ["Sahara", "Antarctica", "Arabian", "Gobi"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which tree is known for its colorful autumn leaves?",
+                    options: ["Oak", "Maple", "Pine", "Palm"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the largest land mammal?",
+                    options: ["Elephant", "Rhinoceros", "Hippopotamus", "Giraffe"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which of these is not a type of volcano?",
+                    options: ["Active", "Dormant", "Extinct", "Expired"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the world's longest river?",
+                    options: ["Nile", "Amazon", "Yangtze", "Mississippi"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which of these is not a layer of the atmosphere?",
+                    options: ["Troposphere", "Stratosphere", "Mesosphere", "Aquasphere"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the largest organ of the human body?",
+                    options: ["Liver", "Brain", "Skin", "Lungs"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which of these is not a type of precipitation?",
+                    options: ["Rain", "Snow", "Hail", "Cloud"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the largest species of bear?",
+                    options: ["Grizzly", "Polar bear", "Black bear", "Panda"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a type of tree leaf arrangement?",
+                    options: ["Alternate", "Opposite", "Whorled", "Diagonal"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the world's highest mountain?",
+                    options: ["K2", "Mount Everest", "Kangchenjunga", "Lhotse"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a type of symbiotic relationship?",
+                    options: ["Mutualism", "Commensalism", "Parasitism", "Individualism"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What percentage of Earth's surface is covered by water?",
+                    options: ["51%", "61%", "71%", "81%"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which of these is not a natural disaster?",
+                    options: ["Earthquake", "Hurricane", "Tornado", "Blackout"],
+                    correctAnswer: 3
+                },
+            ]
+        }
+
+
+        function generateSocialMediaQuestions() {
+            return [
+                {
+                    text: "Which platform has a 'Stories' feature that disappears after 24 hours?",
+                    options: ["Facebook", "Instagram", "LinkedIn", "Twitter"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the character limit for a standard tweet on Twitter (now X)?",
+                    options: ["140", "240", "280", "320"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which social media platform is primarily used for professional networking?",
+                    options: ["Instagram", "TikTok", "LinkedIn", "Snapchat"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What was the original name of Facebook?",
+                    options: ["Facemash", "TheFacebook", "Harvard Connect", "SocialWeb"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which platform introduced the 'Like' button first?",
+                    options: ["Facebook", "Instagram", "Twitter", "MySpace"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What does 'DM' stand for in social media terms?",
+                    options: ["Direct Message", "Digital Mail", "Daily Meme", "Data Management"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which social media platform is known for its short-form video content?",
+                    options: ["YouTube", "TikTok", "Vimeo", "Triller"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What year was Instagram launched?",
+                    options: ["2008", "2010", "2012", "2014"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which platform uses a 'swipe up' feature in Stories?",
+                    options: ["Snapchat", "Instagram", "Both", "Neither"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of Twitter's retweet symbol?",
+                    options: ["Share", "Repost", "Reblog", "Retweet"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which social media platform was originally called 'Burbn'?",
+                    options: ["Twitter", "Instagram", "Pinterest", "Tumblr"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the main color of Twitter's interface?",
+                    options: ["Red", "Blue", "Green", "Purple"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which platform introduced 'Reels' as a response to TikTok?",
+                    options: ["Facebook", "Instagram", "YouTube", "Snapchat"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What does 'TL' stand for in social media slang?",
+                    options: ["Top Like", "Timeline", "Trending List", "Tag Line"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which social media platform has a 'pin' feature for posts?",
+                    options: ["Facebook", "Pinterest", "Twitter", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the maximum number of people in an Instagram group chat?",
+                    options: ["15", "32", "50", "100"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which platform uses a 'fleets' feature similar to Stories?",
+                    options: ["Twitter", "LinkedIn", "Reddit", "Tumblr"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What was the first social media platform to reach 1 billion users?",
+                    options: ["Facebook", "YouTube", "WhatsApp", "Instagram"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which social media app uses a 'ghost' as its logo?",
+                    options: ["Twitter", "Snapchat", "TikTok", "Telegram"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of LinkedIn's version of 'liking' a post?",
+                    options: ["Like", "Endorse", "React", "Celebrate"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which platform allows users to 'go live' for broadcasting?",
+                    options: ["Facebook", "Instagram", "Twitter", "All of the above"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the maximum video length for an Instagram Reel?",
+                    options: ["15 seconds", "30 seconds", "60 seconds", "90 seconds"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "Which social media platform was created by Evan Spiegel?",
+                    options: ["Instagram", "Snapchat", "TikTok", "Pinterest"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What does 'AMA' stand for in Reddit terminology?",
+                    options: ["Ask Me Anything", "About My Account", "All My Answers", "Always Mention All"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which platform introduced the 'heart' as its like button first?",
+                    options: ["Instagram", "Twitter", "Tumblr", "Pinterest"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the name of Facebook's virtual currency?",
+                    options: ["Facebook Credits", "Meta Coins", "Social Dollars", "Zuck Bucks"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which social media platform is known for its 'board' organization system?",
+                    options: ["Pinterest", "Tumblr", "Reddit", "Flipboard"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "What is the maximum number of photos in a single Instagram post?",
+                    options: ["5", "10", "15", "20"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which platform uses 'upvotes' and 'downvotes'?",
+                    options: ["Twitter", "Reddit", "Quora", "Tumblr"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What was the first video ever uploaded to YouTube?",
+                    options: ["Gangnam Style", "Charlie Bit My Finger", "Me at the zoo", "Evolution of Dance"],
+                    correctAnswer: 2
+                },
+            ]
+        }
+
+
+        function generateSpaceQuestions() {
+            return [
+                {
+                    text: "What is the closest planet to the Sun?",
+                    options: ["Venus", "Mercury", "Earth", "Mars"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet is known as the Red Planet?",
+                    options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the largest planet in our solar system?",
+                    options: ["Earth", "Saturn", "Jupiter", "Neptune"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which of these is not a moon of Jupiter?",
+                    options: ["Europa", "Titan", "Ganymede", "Callisto"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of our galaxy?",
+                    options: ["Andromeda", "Milky Way", "Sombrero", "Whirlpool"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet has the most prominent rings?",
+                    options: ["Jupiter", "Saturn", "Uranus", "Neptune"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the hottest planet in our solar system?",
+                    options: ["Mercury", "Venus", "Mars", "Jupiter"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a type of galaxy?",
+                    options: ["Spiral", "Elliptical", "Irregular", "Triangular"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the first artificial satellite launched into space?",
+                    options: ["Explorer 1", "Sputnik 1", "Vanguard 1", "Telstar 1"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet rotates on its side?",
+                    options: ["Venus", "Mars", "Uranus", "Neptune"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of NASA's most famous space telescope?",
+                    options: ["Kepler", "Hubble", "James Webb", "Chandra"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a real constellation?",
+                    options: ["Orion", "Ursa Major", "Canis Major", "Felinus"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the term for when the Moon blocks the Sun?",
+                    options: ["Lunar eclipse", "Solar eclipse", "Planetary transit", "Solar flare"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet has the most moons?",
+                    options: ["Jupiter", "Saturn", "Uranus", "Neptune"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "What is the name of the first human to walk on the Moon?",
+                    options: ["Yuri Gagarin", "Neil Armstrong", "Buzz Aldrin", "Alan Shepard"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a type of meteorite?",
+                    options: ["Stony", "Iron", "Stony-iron", "Bronze"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the force that keeps planets in orbit?",
+                    options: ["Magnetism", "Gravity", "Inertia", "Friction"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which planet has the shortest day?",
+                    options: ["Mercury", "Venus", "Jupiter", "Mars"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the first dog in space?",
+                    options: ["Belka", "Strelka", "Laika", "Barka"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which of these is not a phase of the Moon?",
+                    options: ["New", "Crescent", "Full", "Dark"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the brightest star in our night sky?",
+                    options: ["Vega", "Polaris", "Sirius", "Betelgeuse"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which planet is known for its Great Dark Spot?",
+                    options: ["Jupiter", "Saturn", "Uranus", "Neptune"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the first American in space?",
+                    options: ["John Glenn", "Alan Shepard", "Neil Armstrong", "Buzz Aldrin"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a real space agency?",
+                    options: ["NASA", "ESA", "JAXA", "USCA"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the term for a shooting star?",
+                    options: ["Comet", "Asteroid", "Meteor", "Meteorite"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "Which planet has the longest year?",
+                    options: ["Jupiter", "Saturn", "Neptune", "Uranus"],
+                    correctAnswer: 2
+                },
+                {
+                    text: "What is the name of the first space shuttle?",
+                    options: ["Columbia", "Enterprise", "Discovery", "Atlantis"],
+                    correctAnswer: 1
+                },
+                {
+                    text: "Which of these is not a dwarf planet?",
+                    options: ["Pluto", "Ceres", "Eris", "Titan"],
+                    correctAnswer: 3
+                },
+                {
+                    text: "What is the name of the theoretical boundary around a black hole?",
+                    options: ["Event horizon", "Singularity point", "Photon sphere", "Gravity well"],
+                    correctAnswer: 0
+                },
+                {
+                    text: "Which planet is closest in size to Earth?",
+                    options: ["Mars", "Mercury", "Venus", "Neptune"],
+                    correctAnswer: 2
+                },
+            ]
+        }
+
         function generateGenericQuestions() {
             // Fallback if category not implemented
             return Array(100).fill().map((_, i) => ({
